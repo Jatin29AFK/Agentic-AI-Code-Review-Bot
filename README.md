@@ -431,6 +431,27 @@ https://github.com/owner/repo/pull/123
 
 ---
 
+
+## Screenshots
+
+| Dashboard | New Review |
+|---|---|
+| ![Dashboard screenshot](docs/screenshots/Code-Review-Bot%20dashboard.png) | ![New review screenshot](docs/screenshots/New_Review_Section.png) |
+
+| Review Result | Detailed Result |
+|---|---|
+| ![Review result screenshot](docs/screenshots/Review_Result.png) | ![Detailed review result screenshot](docs/screenshots/Review_Result2.png) |
+
+| Bot Suggestions | Comment Preview |
+|---|---|
+| ![Bot suggestions screenshot](docs/screenshots/Bot_Suggestions.png) | ![Comment preview screenshot](docs/screenshots/Bot_Comment_preview.png) |
+
+### Autofix Drafts
+
+![Autofix drafts screenshot](docs/screenshots/Bot-Autofix_Drafts.png)
+
+---
+
 ## Path Filter Examples
 
 Review only backend code:
@@ -569,25 +590,6 @@ This project follows a safe and controlled AI review design.
 
 ---
 
-## Screenshots
-
-| Dashboard | New Review |
-|---|---|
-| ![Dashboard screenshot](docs/screenshots/Code-Review-Bot%20dashboard.png) | ![New review screenshot](docs/screenshots/New_Review_Section.png) |
-
-| Review Result | Detailed Result |
-|---|---|
-| ![Review result screenshot](docs/screenshots/Review_Result.png) | ![Detailed review result screenshot](docs/screenshots/Review_Result2.png) |
-
-| Bot Suggestions | Comment Preview |
-|---|---|
-| ![Bot suggestions screenshot](docs/screenshots/Bot_Suggestions.png) | ![Comment preview screenshot](docs/screenshots/Bot_Comment_preview.png) |
-
-### Autofix Drafts
-
-![Autofix drafts screenshot](docs/screenshots/Bot-Autofix_Drafts.png)
-
----
 
 <div align="center">
 

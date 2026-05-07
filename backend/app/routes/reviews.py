@@ -48,6 +48,7 @@ def create_manual_review(
             repo_url=str(payload.repo_url),
             pr_number=payload.pr_number,
             github_token=payload.github_token,
+            path_filters=payload.path_filters,
         )
         repository.save_review(db, review_result, raw_result)
         return review_result
@@ -95,7 +96,9 @@ def get_review_details(
         pr_url=raw_review.get("pr_url", ""),
         head_sha=raw_review.get("head_sha", ""),
         base_sha=raw_review.get("base_sha", ""),
+        path_filters=raw_review.get("path_filters", []),
         changed_modules=raw_review.get("changed_modules", []),
+        release_notes=raw_review.get("release_notes", []),
         review_plan=[ReviewPlanItem.model_validate(item) for item in raw_review.get("review_plan", [])],
         workflow_notes=raw_review.get("workflow_notes", []),
         reviewed_files=[ReviewedFileInfo.model_validate(item) for item in raw_review.get("reviewed_files", [])],
@@ -198,6 +201,7 @@ def post_comments(
             raw_review=raw_review,
             github_token=payload.github_token,
             post_inline_comments=payload.post_inline_comments,
+            skip_lgtm_comment=payload.skip_lgtm_comment,
         )
     except GitHubServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc

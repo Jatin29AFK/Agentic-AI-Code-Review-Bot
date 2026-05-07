@@ -1,4 +1,4 @@
-import { AlertTriangle, GitPullRequestArrow, ShieldAlert, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, GitPullRequestArrow, ShieldAlert, Sparkles, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
@@ -7,9 +7,14 @@ import ScoreCard from "../components/ScoreCard";
 export default function Dashboard() {
   const [reviews, setReviews] = useState([]);
   const [error, setError] = useState("");
+  const [health, setHealth] = useState({ loading: true, ok: false, message: "" });
 
   useEffect(() => {
     api.getReviews().then(setReviews).catch((err) => setError(err.message));
+    api
+      .getHealth()
+      .then(() => setHealth({ loading: false, ok: true, message: "Backend connected" }))
+      .catch((err) => setHealth({ loading: false, ok: false, message: err.message }));
   }, []);
 
   const stats = useMemo(() => {
@@ -28,21 +33,39 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl space-y-4">
             <span className="inline-flex h-8 items-center rounded-full border border-sky-200 bg-sky-100 px-3 text-xs font-semibold text-sky-800">
-              Production-ready AI workflow for GitHub PR review
+              Fast GitHub PR reviews with optional token-based access
             </span>
             <div className="space-y-3">
               <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Agentic AI Code Review Bot</h1>
               <p className="max-w-2xl text-base leading-7 text-slate-700">
-                Review pull requests with a multi-agent workflow that focuses on bugs, security, quality, and missing tests before human reviewers step in.
+                Review public or authorized private pull requests with a multi-agent workflow that focuses on bugs, security, quality, and missing tests before human reviewers step in.
               </p>
             </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 font-semibold ${
+                  health.ok ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800"
+                }`}
+              >
+                {health.loading ? "Checking backend..." : health.message}
+              </span>
+              <span className="text-slate-500">Public repos work without a token. Private repos and GitHub comment posting need one.</span>
+            </div>
           </div>
-          <Link
-            to="/reviews/new"
-            className="inline-flex h-11 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white transition hover:bg-sky-600"
-          >
-            Start a review
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to="/reviews/new"
+              className="inline-flex h-11 items-center justify-center rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white transition hover:bg-sky-600"
+            >
+              Start a review
+            </Link>
+            <Link
+              to="/history"
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              View history
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -51,6 +74,36 @@ export default function Dashboard() {
         <ScoreCard icon={Sparkles} label="Average score" value={stats.avgScore} hint="Across all completed reviews" tone="emerald" />
         <ScoreCard icon={AlertTriangle} label="Issues found" value={stats.totalIssues} hint="Actionable findings surfaced by the bot" tone="amber" />
         <ScoreCard icon={ShieldAlert} label="High-risk PRs" value={stats.highRisk} hint="PRs needing closer human attention" tone="rose" />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        <article className="panel p-5">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <h2 className="text-lg font-semibold text-slate-900">Public repo, review only</h2>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Paste the repo URL and PR number. You can usually leave the GitHub token empty unless you hit rate limits.
+          </p>
+        </article>
+        <article className="panel p-5">
+          <div className="flex items-center gap-3">
+            <Workflow className="h-5 w-5 text-sky-600" />
+            <h2 className="text-lg font-semibold text-slate-900">Public repo, reliable usage</h2>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Add a fine-grained PAT when you want higher GitHub API limits, more reliable fetches, or to review many PRs in one sitting.
+          </p>
+        </article>
+        <article className="panel p-5">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-600" />
+            <h2 className="text-lg font-semibold text-slate-900">Private repo or post comments</h2>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Use a token with repository access. For comment posting, grant Pull requests: Read and write plus Issues: Read and write.
+          </p>
+        </article>
       </section>
 
       <section className="space-y-4">

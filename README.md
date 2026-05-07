@@ -18,6 +18,11 @@ Software teams spend a lot of time manually reviewing pull requests for regressi
 ## Features
 
 - Manual PR review from repo URL + pull request number
+- Flexible GitHub access modes:
+  - public repo review without a token
+  - higher-rate public repo review with a PAT
+  - private repo review with a repo-scoped token
+  - optional GitHub comment posting with write permissions
 - GitHub webhook mode for `pull_request` events
 - Multi-agent review workflow:
   - diff summary
@@ -31,6 +36,8 @@ Software teams spend a lot of time manually reviewing pull requests for regressi
 - Structured findings with severity, category, confidence, and suggested fix
 - Review score and risk calculation
 - Comment preview and GitHub PR comment posting
+- Optional path filters for targeted reviews
+- Lightweight release notes generated from each review
 - SQLite review history
 - React dashboard for history, results, filters, and autofix drafts
 - Dockerized local development
@@ -187,15 +194,22 @@ Copy `backend/.env.example` to `backend/.env`.
 ```env
 GITHUB_TOKEN=
 GITHUB_WEBHOOK_SECRET=
-LLM_PROVIDER=openai
+LLM_PROVIDER=groq
 LLM_API_KEY=
-LLM_MODEL=gpt-4o-mini
+LLM_MODEL=llama-3.1-8b-instant
 DATABASE_URL=sqlite:///./reviews.db
 BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:5175,http://127.0.0.1:5175
+POST_WEBHOOK_COMMENTS=false
 AUTOFIX_ENABLED=true
 AUTOFIX_MAX_ISSUES_PER_REVIEW=3
 AUTOFIX_MIN_CONFIDENCE=0.85
 AUTOFIX_MAX_PATCH_CHARS=8000
+```
+
+Copy `frontend/.env.example` to `frontend/.env` when running the UI locally.
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 Supported provider modes in code:
@@ -204,6 +218,37 @@ Supported provider modes in code:
 - `groq`
 - `openrouter`
 - `openai_compatible`
+
+## GitHub Access Modes
+
+### Public repo, review only
+
+- Paste the repo URL and PR number
+- Leave the GitHub token empty
+- Best for occasional reviews
+- GitHub unauthenticated REST API usage is rate limited, so heavy use may require a token
+
+### Public repo, reliable review
+
+- Paste the repo URL and PR number
+- Add a fine-grained PAT in the GitHub token field when you want higher rate limits
+- Good for repeated testing or demo sessions
+
+### Private repo
+
+- Paste the repo URL and PR number
+- Add a token that has access to that repository
+
+### Post comments back to GitHub
+
+Use a token with write permissions.
+
+For a fine-grained PAT, grant:
+
+- repository access to the target repo
+- `Pull requests: Read and write`
+- `Issues: Read and write`
+- `Contents: Read-only`
 
 ## Run Locally
 
@@ -242,24 +287,85 @@ docker compose up --build
 
 ## Deployment
 
-### Backend on Render
+### Recommended Production Shape
+
+- frontend on Vercel
+- backend on Render
+- Groq as the LLM provider
+- `GITHUB_TOKEN` left empty by default unless you want a backend-wide token
+
+### Backend on Render (Free Web Service)
+
+This is the simplest path if you want to deploy now without using Render Blueprint.
+
+1. Push the repo to GitHub.
+2. In Render, click `New` -> `Web Service`.
+3. Connect the repository.
+4. Set:
+   - `Root Directory`: `backend`
+   - `Runtime`: `Python 3`
+   - `Build Command`: `pip install -r requirements.txt`
+   - `Start Command`: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Add environment variables:
+   - `LLM_PROVIDER=groq`
+   - `LLM_API_KEY=<your Groq API key>`
+   - `LLM_MODEL=llama-3.1-8b-instant`
+   - `GITHUB_TOKEN=`
+   - `BACKEND_CORS_ORIGINS=https://<your-vercel-production-domain>`
+   - `BACKEND_CORS_ORIGIN_REGEX=https://.*\.vercel\.app`
+   - `DATABASE_URL=sqlite:///./reviews.db`
+   - `POST_WEBHOOK_COMMENTS=false`
+   - `AUTOFIX_ENABLED=true`
+   - `AUTOFIX_MAX_ISSUES_PER_REVIEW=3`
+   - `AUTOFIX_MIN_CONFIDENCE=0.85`
+   - `AUTOFIX_MAX_PATCH_CHARS=8000`
+6. Deploy the backend.
+7. Confirm `GET /health` succeeds on the Render URL.
+
+Important:
+
+- Free Render storage is ephemeral, so SQLite review history can disappear after restarts or redeploys.
+- For a shared production deployment, prefer user-supplied GitHub tokens in the UI rather than a broad backend token.
+
+### Optional Backend on Render (Blueprint / Persistent Disk)
 
 This repo includes a root-level [render.yaml](render.yaml) using Render Blueprints. It provisions:
 
 - a FastAPI web service
 - persistent disk storage for SQLite review history
 - environment variable placeholders for secrets and CORS
+- SQLite persistence at `/var/data/reviews.db`
+
+Use this path only if you want the persistent-disk setup and your Render plan supports Blueprints and disks.
 
 Deploy flow:
 
 1. Push the repo to GitHub.
 2. In Render, create a new Blueprint from this repository.
-3. Fill in secret values for:
+3. Keep the generated service settings from `render.yaml`:
+   - `rootDir: backend`
+   - `buildCommand: pip install -r requirements.txt`
+   - `startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - persistent disk mounted at `/var/data`
+   - `DATABASE_URL=sqlite:////var/data/reviews.db`
+4. Fill in environment values for:
    - `LLM_API_KEY`
-   - `GITHUB_TOKEN`
-   - `GITHUB_WEBHOOK_SECRET`
-   - `BACKEND_CORS_ORIGINS`
-4. Deploy the backend and copy the public backend URL.
+   - `LLM_PROVIDER=groq`
+   - `LLM_MODEL=llama-3.1-8b-instant`
+   - `GITHUB_TOKEN` or leave blank if you want user-supplied tokens only
+   - `BACKEND_CORS_ORIGINS=https://<your-vercel-production-domain>`
+   - `AUTOFIX_ENABLED=true`
+   - `AUTOFIX_MAX_ISSUES_PER_REVIEW=3`
+   - `AUTOFIX_MIN_CONFIDENCE=0.85`
+   - `AUTOFIX_MAX_PATCH_CHARS=8000`
+5. Keep `POST_WEBHOOK_COMMENTS=false` for the first production release.
+6. Deploy the backend and confirm `GET /health` succeeds.
+7. Copy the public backend URL for the Vercel setup.
+
+Optional later:
+
+- `GITHUB_WEBHOOK_SECRET`
+- `BACKEND_CORS_ORIGIN_REGEX=https://.*\.vercel\.app`
 
 ### Frontend on Vercel
 
@@ -267,11 +373,39 @@ The frontend includes [frontend/vercel.json](frontend/vercel.json) with a rewrit
 
 Deploy flow:
 
-1. Import the `frontend` directory into Vercel.
-2. Set `VITE_API_BASE_URL` to your deployed backend URL.
-3. Redeploy after the variable is saved.
+1. Import this GitHub repository into Vercel.
+2. Set the project `Root Directory` to `frontend`.
+3. Keep the existing Vite framework detection and [frontend/vercel.json](frontend/vercel.json) SPA rewrite.
+4. Add `VITE_API_BASE_URL=https://<your-render-backend-domain>`.
+5. Deploy or redeploy after the variable is saved.
+
+Notes:
+
+- The production frontend no longer falls back to a guessed backend host.
+- `VITE_API_BASE_URL` must be set in Vercel for deployed environments.
+- Local development still defaults to `http://<current-host>:8000` when the variable is not set.
+- If you use Vercel preview deployments, keep `BACKEND_CORS_ORIGIN_REGEX=https://.*\.vercel\.app` in Render.
+
+### Vercel Update Flow
+
+Whenever you change frontend code or the frontend env vars:
+
+1. Push the latest commit to GitHub.
+2. In Vercel, open the project.
+3. Verify `VITE_API_BASE_URL` still points to the correct Render backend.
+4. Trigger a redeploy.
+
+### Render Update Flow
+
+Whenever you change backend code or backend env vars:
+
+1. Push the latest commit to GitHub.
+2. In Render, redeploy the service.
+3. If you changed CORS values, verify `/health` and then test from the live Vercel URL.
 
 ## GitHub Webhook Setup
+
+Webhook automation is intentionally out of scope for the first production deployment. Start with manual reviews from the UI, then enable webhook mode after the base deployment is stable.
 
 1. Expose the backend publicly.
 2. In GitHub, open repository settings and create a webhook.

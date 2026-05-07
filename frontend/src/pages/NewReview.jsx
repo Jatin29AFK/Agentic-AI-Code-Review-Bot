@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import LoadingSteps from "../components/LoadingSteps";
 
+const recentReviewsStorageKey = "agentic-review-recent-prs";
+
 const loadingSteps = [
   "Fetching pull request details",
   "Reading changed files",
@@ -29,6 +31,8 @@ export default function NewReview() {
   const [repoUrl, setRepoUrl] = useState("");
   const [prNumber, setPrNumber] = useState("");
   const [githubToken, setGithubToken] = useState("");
+  const [pathFilters, setPathFilters] = useState("");
+  const [recentReviews, setRecentReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState("");
@@ -45,6 +49,17 @@ export default function NewReview() {
 
     return () => window.clearInterval(interval);
   }, [loading]);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(recentReviewsStorageKey) || "[]");
+      if (Array.isArray(saved)) {
+        setRecentReviews(saved);
+      }
+    } catch {
+      setRecentReviews([]);
+    }
+  }, []);
 
   const canSubmit = useMemo(() => repoUrl.trim() && Number(prNumber) > 0 && !loading, [loading, prNumber, repoUrl]);
 
@@ -66,18 +81,47 @@ export default function NewReview() {
     setError("");
   }
 
+  function loadRecentReview(item) {
+    setPrUrl(item.prUrl || "");
+    setRepoUrl(item.repoUrl || "");
+    setPrNumber(item.prNumber || "");
+    setPathFilters(item.pathFilters || "");
+    setError("");
+  }
+
+  function saveRecentReview(item) {
+    try {
+      const next = [item, ...recentReviews.filter((existing) => existing.prUrl !== item.prUrl)].slice(0, 5);
+      setRecentReviews(next);
+      window.localStorage.setItem(recentReviewsStorageKey, JSON.stringify(next));
+    } catch {
+      // Ignore storage failures and keep the review flow going.
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setLoading(true);
     setError("");
 
     const submittedToken = githubToken.trim();
+    const submittedPathFilters = pathFilters
+      .split(/\n|,/)
+      .map((value) => value.trim())
+      .filter(Boolean);
 
     try {
+      saveRecentReview({
+        prUrl: prUrl.trim(),
+        repoUrl: repoUrl.trim(),
+        prNumber: String(prNumber).trim(),
+        pathFilters: pathFilters.trim(),
+      });
       const review = await api.createManualReview({
         repo_url: repoUrl.trim(),
         pr_number: Number(prNumber),
         github_token: submittedToken || undefined,
+        path_filters: submittedPathFilters,
       });
       setGithubToken("");
       navigate(`/reviews/${review.review_id}`, {
@@ -101,6 +145,20 @@ export default function NewReview() {
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-700">
             Paste a GitHub repository URL and pull request number to fetch the live diff, route it through the review agents, and store the structured result locally.
           </p>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold text-emerald-900">Public repo, review only</p>
+              <p className="mt-2 text-sm leading-6 text-emerald-800">Leave the token empty unless you hit rate limits.</p>
+            </div>
+            <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+              <p className="text-sm font-semibold text-sky-900">Public repo, reliable usage</p>
+              <p className="mt-2 text-sm leading-6 text-sky-800">Paste a fine-grained PAT when you want higher GitHub API limits.</p>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-900">Private repo or comment posting</p>
+              <p className="mt-2 text-sm leading-6 text-amber-800">Use a token with repository access plus comment-write permissions.</p>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-slate-200 bg-white/80 p-6 shadow-panel">
@@ -182,7 +240,24 @@ export default function NewReview() {
               className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-300"
             />
             <p className="text-xs leading-6 text-slate-500">
-              For posting comments back to GitHub later, a fine-grained PAT usually needs repository access with Pull requests: Read and write, plus Issues: Read and write or Pull requests: Read and write.
+              Your token is used only for the current request. For comment posting, a fine-grained PAT usually needs repository access plus Pull requests: Read and write and Issues: Read and write.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700" htmlFor="path-filters">
+              Path filters <span className="text-slate-500">(optional)</span>
+            </label>
+            <textarea
+              id="path-filters"
+              value={pathFilters}
+              onChange={(event) => setPathFilters(event.target.value)}
+              rows="4"
+              placeholder={"src/**\n!docs/**\n!**/*.md"}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-300"
+            />
+            <p className="text-xs leading-6 text-slate-500">
+              One glob pattern per line. Use patterns like <code>src/**</code> to include files and <code>!docs/**</code> to exclude files.
             </p>
           </div>
 
@@ -207,6 +282,26 @@ export default function NewReview() {
       <aside className="space-y-5">
         <LoadingSteps steps={loadingSteps} currentStep={loading ? currentStep : -1} />
 
+        {recentReviews.length ? (
+          <div className="rounded-lg border border-slate-200 bg-white/80 p-5 shadow-panel">
+            <p className="text-sm font-semibold text-slate-900">Recent review inputs</p>
+            <div className="mt-4 space-y-3">
+              {recentReviews.map((item) => (
+                <button
+                  key={item.prUrl}
+                  type="button"
+                  onClick={() => loadRecentReview(item)}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/85 p-4 text-left transition hover:border-sky-200 hover:bg-white"
+                >
+                  <p className="text-sm font-semibold text-slate-900">{item.repoUrl}</p>
+                  <p className="mt-1 text-xs text-slate-500">PR #{item.prNumber}</p>
+                  {item.pathFilters ? <p className="mt-2 text-xs text-slate-500">Filters: {item.pathFilters}</p> : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="rounded-lg border border-slate-200 bg-white/80 p-5 shadow-panel">
           <p className="text-sm font-semibold text-slate-900">What gets reviewed</p>
           <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
@@ -218,11 +313,12 @@ export default function NewReview() {
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white/80 p-5 shadow-panel">
-          <p className="text-sm font-semibold text-slate-900">Comment posting tips</p>
+          <p className="text-sm font-semibold text-slate-900">Token quick guide</p>
           <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
             <li>Public repos can be reviewed without a token, but comment posting still needs write permissions.</li>
-            <li>Fine-grained PATs should include repository access and PR comment permissions.</li>
+            <li>Fine-grained PATs should include repository access, <code>Pull requests: Read and write</code>, and <code>Issues: Read and write</code>.</li>
             <li>Classic PATs usually need <code>public_repo</code> for public repos and <code>repo</code> for private repos.</li>
+            <li>Use path filters if you only want to review folders like <code>src/**</code> or skip docs and lockfiles.</li>
           </ul>
         </div>
       </aside>

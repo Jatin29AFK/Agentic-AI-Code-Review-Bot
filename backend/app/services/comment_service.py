@@ -22,7 +22,17 @@ class CommentService:
         raw_review: dict,
         github_token: str | None,
         post_inline_comments: bool,
+        skip_lgtm_comment: bool,
     ) -> CommentPostingResult:
+        if skip_lgtm_comment and self._should_skip_commenting(review):
+            return CommentPostingResult(
+                review_id=review.review_id,
+                summary_comment_posted=False,
+                inline_comments_posted=0,
+                skipped_duplicates=0,
+                message="Skipped comment posting because the review is effectively LGTM and skip_lgtm_comment is enabled.",
+            )
+
         repo_slug = review.repo.split("/", 1)
         if len(repo_slug) != 2:
             raise GitHubServiceError("Stored review metadata is missing a valid GitHub repository slug.")
@@ -75,6 +85,7 @@ class CommentService:
         )
 
     def build_comment_preview(self, review: ReviewResult) -> CommentPreviewResponse:
+        skip_commenting = self._should_skip_commenting(review)
         return CommentPreviewResponse(
             review_id=review.review_id,
             summary_comment=self._build_summary_comment(review),
@@ -88,6 +99,10 @@ class CommentService:
                 )
                 for issue in self._select_inline_issues(review.issues)
             ],
+            skip_commenting=skip_commenting,
+            skip_reason="This review has no actionable issues and can skip a top-level LGTM-style comment by default."
+            if skip_commenting
+            else None,
         )
 
     def _build_summary_comment(self, review: ReviewResult) -> str:
@@ -106,6 +121,7 @@ class CommentService:
             f"**Risk level:** {review.risk_level}\n"
             f"**Issues found:** {review.total_issues}\n\n"
             f"**Summary**\n{review.summary}\n\n"
+            f"**Release Notes**\n{self._format_release_notes(review.release_notes)}\n\n"
             f"**Top Issues**\n{issue_lines}\n\n"
             f"**Suggested Tests**\n{test_suggestions}\n\n"
             f"**Positive Notes**\n{positive_notes}"
@@ -126,3 +142,9 @@ class CommentService:
     def _select_inline_issues(self, issues: list[IssueFinding]) -> list[IssueFinding]:
         ranked = sorted(issues, key=lambda issue: (SEVERITY_ORDER[issue.severity], -issue.confidence))
         return [issue for issue in ranked if issue.line][:5]
+
+    def _should_skip_commenting(self, review: ReviewResult) -> bool:
+        return review.total_issues == 0 and review.risk_level == "low"
+
+    def _format_release_notes(self, release_notes: list[str]) -> str:
+        return "\n".join(f"- {note}" for note in release_notes[:5]) or "- No release notes generated."

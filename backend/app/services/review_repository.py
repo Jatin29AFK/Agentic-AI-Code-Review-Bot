@@ -94,6 +94,7 @@ class ReviewRepository:
                 pr_number=record.pr_number,
                 pr_title=record.pr_title,
                 summary=record.summary,
+                release_notes=[],
                 risk_level=record.risk_level,
                 score=record.score,
                 total_files_reviewed=record.total_files_reviewed,

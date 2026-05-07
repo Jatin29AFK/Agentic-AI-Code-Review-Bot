@@ -78,6 +78,7 @@ async def github_webhook(
                 raw_review=raw_result,
                 github_token=None,
                 post_inline_comments=True,
+                skip_lgtm_comment=True,
             ).model_dump()
         except Exception as exc:  # noqa: BLE001
             logger.warning("Webhook review succeeded but comment posting failed: %s", exc)

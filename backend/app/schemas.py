@@ -15,11 +15,13 @@ class ManualReviewRequest(BaseModel):
     repo_url: HttpUrl | str
     pr_number: int = Field(gt=0)
     github_token: str | None = Field(default=None, min_length=1)
+    path_filters: list[str] = Field(default_factory=list)
 
 
 class PostCommentsRequest(BaseModel):
     github_token: str | None = Field(default=None, min_length=1)
     post_inline_comments: bool = True
+    skip_lgtm_comment: bool = True
 
 
 class IssueFinding(BaseModel):
@@ -71,6 +73,7 @@ class ReviewResult(BaseModel):
     pr_number: int
     pr_title: str
     summary: str
+    release_notes: list[str] = Field(default_factory=list)
     risk_level: RiskLevel
     score: int = Field(ge=0, le=100)
     total_files_reviewed: int = Field(ge=0)
@@ -123,7 +126,9 @@ class ReviewDetailsResponse(BaseModel):
     pr_url: str
     head_sha: str
     base_sha: str
+    path_filters: list[str] = Field(default_factory=list)
     changed_modules: list[str] = Field(default_factory=list)
+    release_notes: list[str] = Field(default_factory=list)
     review_plan: list[ReviewPlanItem] = Field(default_factory=list)
     workflow_notes: list[str] = Field(default_factory=list)
     reviewed_files: list[ReviewedFileInfo] = Field(default_factory=list)
@@ -142,6 +147,8 @@ class CommentPreviewResponse(BaseModel):
     review_id: str
     summary_comment: str
     inline_comments: list[InlineCommentPreview] = Field(default_factory=list)
+    skip_commenting: bool = False
+    skip_reason: str | None = None
 
 
 class AutoFixDraft(BaseModel):

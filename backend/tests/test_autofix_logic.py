@@ -72,6 +72,24 @@ class AutofixLogicTests(unittest.TestCase):
         self.assertFalse(orchestrator._is_autofix_eligible(low_confidence_issue, patch_map))
         self.assertFalse(orchestrator._is_autofix_eligible(vague_issue, patch_map))
 
+    def test_issue_ids_are_unique_across_reviews_for_same_finding(self):
+        orchestrator = ReviewOrchestrator.__new__(ReviewOrchestrator)
+        issue = IssueFinding(
+            file="app/service.py",
+            line=14,
+            severity="high",
+            category="bug",
+            title="Missing null guard",
+            description="The diff dereferences the payload before validating it.",
+            suggested_fix="Return early when payload is empty.",
+            confidence=0.92,
+        )
+
+        first = orchestrator._assign_issue_ids("review-1", [issue])[0]
+        second = orchestrator._assign_issue_ids("review-2", [issue])[0]
+
+        self.assertNotEqual(first.id, second.id)
+
     def test_autofix_agent_returns_failed_draft_when_patch_is_invalid(self):
         llm = StubLLMService(
             {

@@ -45,8 +45,16 @@ class ReviewOrchestrator:
         self.aggregator_agent = FinalReviewAggregatorAgent(self.llm_service)
         self.autofix_agent = AutofixAgent(self.llm_service, max_patch_chars=self.settings.autofix_max_patch_chars)
 
-    def run_review(self, *, repo_url: str, pr_number: int, github_token: str | None = None) -> tuple[ReviewResult, dict]:
-        context = self.github_service.get_pull_request_context(repo_url, pr_number, github_token)
+    def run_review(
+        self,
+        *,
+        repo_url: str,
+        pr_number: int,
+        github_token: str | None = None,
+        path_filters: list[str] | None = None,
+    ) -> tuple[ReviewResult, dict]:
+        normalized_path_filters = [item.strip() for item in (path_filters or []) if item.strip()]
+        context = self.github_service.get_pull_request_context(repo_url, pr_number, github_token, normalized_path_filters)
         review_id = str(uuid4())
         created_at = datetime.now(timezone.utc)
 
@@ -57,6 +65,7 @@ class ReviewOrchestrator:
                 pr_number=context.pr_number,
                 pr_title=context.pr_title,
                 summary="No supported code files were available in this PR diff, so the bot skipped AI analysis.",
+                release_notes=self._build_release_notes(context=context, issues=[], risk_level="low", path_filters=normalized_path_filters),
                 risk_level="low",
                 score=100,
                 total_files_reviewed=0,
@@ -69,6 +78,7 @@ class ReviewOrchestrator:
             raw = self._build_raw_result(
                 context,
                 result,
+                path_filters=normalized_path_filters,
                 changed_modules=[],
                 plan=[],
                 workflow_notes=["No reviewable files found."],
@@ -86,7 +96,7 @@ class ReviewOrchestrator:
         )
 
         issues = self._dedupe_issues(issues)
-        issues = self._assign_issue_ids(issues)
+        issues = self._assign_issue_ids(review_id, issues)
         score = self._calculate_score(issues)
         risk_level = self._calculate_risk_level(score, issues)
 
@@ -96,6 +106,12 @@ class ReviewOrchestrator:
             test_suggestions=test_suggestions,
             positive_notes=positive_notes,
         )
+        release_notes = self._build_release_notes(
+            context=context,
+            issues=issues,
+            risk_level=risk_level,
+            path_filters=normalized_path_filters,
+        )
 
         result = ReviewResult(
             review_id=review_id,
@@ -103,6 +119,7 @@ class ReviewOrchestrator:
             pr_number=context.pr_number,
             pr_title=context.pr_title,
             summary=final_summary,
+            release_notes=release_notes,
             risk_level=risk_level,
             score=score,
             total_files_reviewed=len(context.reviewable_files),
@@ -125,6 +142,7 @@ class ReviewOrchestrator:
         raw = self._build_raw_result(
             context,
             result,
+            path_filters=normalized_path_filters,
             changed_modules=diff_summary.changed_modules,
             plan=[item.model_dump() for item in review_plan.review_plan],
             workflow_notes=workflow_notes,
@@ -258,11 +276,11 @@ class ReviewOrchestrator:
         )
         return ordered
 
-    def _assign_issue_ids(self, issues: list[IssueFinding]) -> list[IssueFinding]:
+    def _assign_issue_ids(self, review_id: str, issues: list[IssueFinding]) -> list[IssueFinding]:
         assigned: list[IssueFinding] = []
         for issue in issues:
             issue_key = f"{issue.file}|{issue.line}|{issue.category}|{issue.title.strip().lower()}"
-            issue_id = issue.id or f"issue_{hashlib.sha1(issue_key.encode('utf-8')).hexdigest()[:12]}"
+            issue_id = issue.id or f"issue_{hashlib.sha1(f'{review_id}|{issue_key}'.encode('utf-8')).hexdigest()[:12]}"
             assigned.append(issue.model_copy(update={"id": issue_id}))
         return assigned
 
@@ -319,6 +337,7 @@ class ReviewOrchestrator:
         context: PullRequestContext,
         result: ReviewResult,
         *,
+        path_filters: list[str],
         changed_modules: list[str],
         plan: list[dict],
         workflow_notes: list[str],
@@ -330,6 +349,7 @@ class ReviewOrchestrator:
             "pr_url": context.pr_url,
             "head_sha": context.head_sha,
             "base_sha": context.base_sha,
+            "path_filters": path_filters,
             "changed_modules": changed_modules,
             "review_plan": plan,
             "workflow_notes": workflow_notes,
@@ -351,6 +371,44 @@ class ReviewOrchestrator:
             ],
             "autofix_drafts": [draft.model_dump(mode="json") for draft in autofix_drafts],
         }
+
+    def _build_release_notes(
+        self,
+        *,
+        context: PullRequestContext,
+        issues: list[IssueFinding],
+        risk_level: str,
+        path_filters: list[str],
+    ) -> list[str]:
+        notes: list[str] = []
+        reviewed_files = len(context.reviewable_files)
+        if reviewed_files:
+            changed_areas = sorted({file.filename.split("/")[0] for file in context.reviewable_files})[:3]
+            if changed_areas:
+                notes.append(
+                    f"Updates {reviewed_files} reviewed file{'s' if reviewed_files != 1 else ''} across {', '.join(changed_areas)}."
+                )
+            else:
+                notes.append(f"Updates {reviewed_files} reviewed file{'s' if reviewed_files != 1 else ''}.")
+        else:
+            notes.append("No reviewable files matched the current review configuration.")
+
+        if path_filters:
+            notes.append(f"Review was scoped with path filters: {', '.join(path_filters)}.")
+
+        if issues:
+            highest_severity = min(
+                issues,
+                key=lambda item: ["critical", "high", "medium", "low", "suggestion"].index(item.severity),
+            ).severity
+            notes.append(f"Automated review flagged {len(issues)} issue(s); highest severity was {highest_severity}.")
+        else:
+            notes.append("Automated review did not find major issues in the reviewed diff.")
+
+        if risk_level == "high":
+            notes.append("Treat this change as high risk before merge and plan an extra human pass.")
+
+        return notes[:4]
 
     def _dedupe_strings(self, items: list[str]) -> list[str]:
         ordered: list[str] = []

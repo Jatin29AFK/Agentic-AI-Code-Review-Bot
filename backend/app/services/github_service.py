@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from fnmatch import fnmatch
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
@@ -138,11 +139,17 @@ class GitHubService:
             )
         return parts[0], parts[1]
 
-    def get_pull_request_context(self, repo_url: str, pr_number: int, github_token: str | None = None) -> PullRequestContext:
+    def get_pull_request_context(
+        self,
+        repo_url: str,
+        pr_number: int,
+        github_token: str | None = None,
+        path_filters: list[str] | None = None,
+    ) -> PullRequestContext:
         owner, repo_name = self.parse_repo_url(repo_url)
         pr_data = self._request_json("GET", f"/repos/{owner}/{repo_name}/pulls/{pr_number}", github_token)
         files_data = self._paginate(f"/repos/{owner}/{repo_name}/pulls/{pr_number}/files", github_token)
-        files = self._build_files(files_data)
+        files = self._build_files(files_data, path_filters or [])
 
         return PullRequestContext(
             owner=owner,
@@ -284,7 +291,7 @@ class GitHubService:
 
         return None
 
-    def _build_files(self, files_data: list[dict]) -> list[PullRequestFile]:
+    def _build_files(self, files_data: list[dict], path_filters: list[str]) -> list[PullRequestFile]:
         files: list[PullRequestFile] = []
         max_files = self.settings.max_files_reviewed
         reviewable_count = 0
@@ -292,7 +299,7 @@ class GitHubService:
         for item in files_data:
             filename = item.get("filename", "")
             patch = item.get("patch")
-            is_reviewable, skip_reason = self._is_reviewable(filename, item)
+            is_reviewable, skip_reason = self._is_reviewable(filename, item, path_filters)
 
             if is_reviewable and reviewable_count >= max_files:
                 is_reviewable = False
@@ -319,7 +326,7 @@ class GitHubService:
             )
         return files
 
-    def _is_reviewable(self, filename: str, item: dict) -> tuple[bool, str | None]:
+    def _is_reviewable(self, filename: str, item: dict, path_filters: list[str]) -> tuple[bool, str | None]:
         normalized = filename.lower()
         if item.get("status") == "removed":
             return False, "Removed files are skipped."
@@ -341,8 +348,29 @@ class GitHubService:
 
         if item.get("changes", 0) > 1200:
             return False, "Huge file skipped to keep the review focused."
+        if not self._matches_path_filters(filename, path_filters):
+            return False, "Skipped by custom path filters."
 
         return True, None
+
+    def _matches_path_filters(self, filename: str, path_filters: list[str]) -> bool:
+        normalized_patterns = [pattern.strip() for pattern in path_filters if pattern.strip()]
+        if not normalized_patterns:
+            return True
+
+        include_patterns = [pattern for pattern in normalized_patterns if not pattern.startswith("!")]
+        exclude_patterns = [pattern[1:] for pattern in normalized_patterns if pattern.startswith("!") and len(pattern) > 1]
+        normalized_filename = filename.lower()
+
+        def matches(pattern: str) -> bool:
+            lowered = pattern.lower()
+            return fnmatch(normalized_filename, lowered) or fnmatch(normalized_filename, f"**/{lowered}")
+
+        if include_patterns and not any(matches(pattern) for pattern in include_patterns):
+            return False
+        if any(matches(pattern) for pattern in exclude_patterns):
+            return False
+        return True
 
     def _annotate_patch(self, patch: str) -> str:
         if len(patch) > self.settings.max_patch_chars_per_file:

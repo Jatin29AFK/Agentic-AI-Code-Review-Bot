@@ -1,7 +1,12 @@
-const defaultApiBaseUrl = `${window.location.protocol}//${window.location.hostname}:8001`;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl;
+const localApiBaseUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE_URL = configuredApiBaseUrl || (import.meta.env.DEV ? localApiBaseUrl : "");
 
 async function request(path, options = {}) {
+  if (!API_BASE_URL) {
+    throw new Error("VITE_API_BASE_URL is not configured for this deployment.");
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",

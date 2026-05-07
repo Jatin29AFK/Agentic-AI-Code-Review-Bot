@@ -62,6 +62,7 @@ export default function ReviewResult() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [postInlineComments, setPostInlineComments] = useState(true);
+  const [skipLgtmComment, setSkipLgtmComment] = useState(true);
   const [postingState, setPostingState] = useState({ loading: false, message: "", error: "" });
   const [copyState, setCopyState] = useState("");
   const [error, setError] = useState("");
@@ -156,6 +157,7 @@ export default function ReviewResult() {
       const result = await api.postComments(review.review_id, {
         github_token: githubToken || undefined,
         post_inline_comments: postInlineComments,
+        skip_lgtm_comment: skipLgtmComment,
       });
       setPostingState({
         loading: false,
@@ -303,6 +305,14 @@ export default function ReviewResult() {
           </div>
 
           <div className="w-full max-w-md space-y-3">
+            <div className="rounded-lg border border-slate-200 bg-white/85 p-4 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Comment posting checklist</p>
+              <ul className="mt-2 space-y-2 leading-6">
+                <li>Public review only: token optional.</li>
+                <li>Private repo: token must have access to that repository.</li>
+                <li>Post comments: token needs Pull requests: Read and write plus Issues: Read and write.</li>
+              </ul>
+            </div>
             <button
               onClick={handlePostComments}
               disabled={postingState.loading}
@@ -319,6 +329,15 @@ export default function ReviewResult() {
                 className="h-4 w-4 rounded border-slate-300 bg-white text-sky-500 focus:ring-sky-400"
               />
               Post inline comments
+            </label>
+            <label className="inline-flex h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={skipLgtmComment}
+                onChange={(event) => setSkipLgtmComment(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 bg-white text-sky-500 focus:ring-sky-400"
+              />
+              Skip LGTM-only comment
             </label>
           </div>
         </div>
@@ -399,6 +418,45 @@ export default function ReviewResult() {
         </article>
       </section>
 
+      <section className="panel p-6">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <Sparkles className="h-4 w-4" />
+          Release notes
+        </div>
+        <div className="mt-4 space-y-3">
+          {(review.release_notes || []).length ? (
+            review.release_notes.map((note) => (
+              <p key={note} className="rounded-lg border border-slate-200 bg-slate-50/85 p-4 text-sm leading-6 text-slate-700">
+                {note}
+              </p>
+            ))
+          ) : (
+            <p className="text-sm text-slate-500">No release notes were generated for this review.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        <article className="panel p-5">
+          <h2 className="text-lg font-semibold text-slate-900">1. Read the summary</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Use the score, risk level, release notes, and filtered findings to decide whether the PR needs deeper human review.
+          </p>
+        </article>
+        <article className="panel p-5">
+          <h2 className="text-lg font-semibold text-slate-900">2. Export or copy</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Copy the summary, export the JSON bundle, or download autofix patches if you want to share the result outside the app.
+          </p>
+        </article>
+        <article className="panel p-5">
+          <h2 className="text-lg font-semibold text-slate-900">3. Post back to GitHub</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Post comments only when your token has write access. If the review is effectively LGTM, you can skip the summary comment.
+          </p>
+        </article>
+      </section>
+
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(360px,1fr)]">
         <div className="panel p-6">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -440,6 +498,18 @@ export default function ReviewResult() {
             Review workflow
           </div>
           <div className="mt-4 space-y-3">
+            {(details?.path_filters || []).length ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50/85 p-4">
+                <p className="text-sm font-semibold text-slate-900">Path filters</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {details.path_filters.map((filter) => (
+                    <span key={filter} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700">
+                      {filter}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {(details?.review_plan || []).length ? (
               details.review_plan.map((item) => (
                 <div key={`${item.agent}-${item.reason}`} className="rounded-lg border border-slate-200 bg-slate-50/85 p-4">
@@ -767,6 +837,11 @@ export default function ReviewResult() {
                     {commentPreview.inline_comments.length} inline preview item(s)
                   </span>
                 </div>
+                {commentPreview.skip_commenting ? (
+                  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    {commentPreview.skip_reason}
+                  </div>
+                ) : null}
                 <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-4 text-xs leading-6 text-slate-700">
                   {commentPreview.summary_comment}
                 </pre>

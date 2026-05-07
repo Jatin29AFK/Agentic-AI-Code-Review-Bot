@@ -38,8 +38,10 @@ Software teams spend a lot of time manually reviewing pull requests for regressi
 - Comment preview and GitHub PR comment posting
 - Optional path filters for targeted reviews
 - Lightweight release notes generated from each review
+- Skip-noise LGTM comment mode when a review is low risk with no actionable issues
 - SQLite review history
-- React dashboard for history, results, filters, and autofix drafts
+- Recent review input recall for faster reruns
+- React dashboard for history, results, filters, sorting, and autofix drafts
 - Dockerized local development
 
 ## Product Preview
@@ -250,6 +252,45 @@ For a fine-grained PAT, grant:
 - `Issues: Read and write`
 - `Contents: Read-only`
 
+## Using the App
+
+### Fastest way to start
+
+1. Open `New Review`
+2. Paste a PR URL like `https://github.com/owner/repo/pull/123`
+3. Click `Autofill`
+4. Leave the token empty for a public-repo read-only review
+5. Add path filters only if you want to scope the review
+6. Start the review
+
+### When to use a token
+
+- no token:
+  - occasional public-repo review
+- token recommended:
+  - repeated public-repo reviews
+  - higher GitHub API limits
+  - private repos
+  - posting comments back to GitHub
+
+### Path filter examples
+
+- review only backend code:
+  - `backend/**`
+- review only source files and skip docs:
+  - `src/**`
+  - `!docs/**`
+- skip markdown files:
+  - `!**/*.md`
+
+### What happens after the review runs
+
+- summary, score, and risk level are generated
+- release notes are created
+- issues can be filtered by category and search text
+- comment preview is generated before anything is posted to GitHub
+- autofix drafts are created only for eligible high-confidence findings
+
 ## Run Locally
 
 ### Backend
@@ -293,6 +334,7 @@ docker compose up --build
 - backend on Render
 - Groq as the LLM provider
 - `GITHUB_TOKEN` left empty by default unless you want a backend-wide token
+- user-supplied tokens in the UI for private repos and GitHub comment posting
 
 ### Backend on Render (Free Web Service)
 
@@ -326,6 +368,7 @@ Important:
 
 - Free Render storage is ephemeral, so SQLite review history can disappear after restarts or redeploys.
 - For a shared production deployment, prefer user-supplied GitHub tokens in the UI rather than a broad backend token.
+- If you want a clean public demo before redeploying, remove the local `backend/reviews.db` file before pushing and redeploy the backend.
 
 ### Optional Backend on Render (Blueprint / Persistent Disk)
 
@@ -418,6 +461,47 @@ https://your-backend-domain/api/webhooks/github
 4. Set content type to `application/json`.
 5. Add the same secret value to GitHub and `GITHUB_WEBHOOK_SECRET`.
 6. Subscribe to `Pull request` events.
+
+## Troubleshooting
+
+### `GitHub API request failed (403): Resource not accessible by personal access token`
+
+Your token can read the PR but cannot write comments.
+
+Fix:
+
+- for a fine-grained PAT:
+  - repository access to the target repo
+  - `Pull requests: Read and write`
+  - `Issues: Read and write`
+- for a classic PAT:
+  - `public_repo` for public repos
+  - `repo` for private repos
+
+### `Unexpected review failure: UNIQUE constraint failed: issues.id`
+
+This was caused by deterministic issue IDs across repeated reviews of the same finding. The app now generates issue IDs that are unique per review run.
+
+If you still see the error after pulling the latest code:
+
+1. restart the backend
+2. rerun the review
+
+### `ERR_BLOCKED_BY_CLIENT` in the browser
+
+This usually comes from a browser extension such as an ad blocker or privacy shield blocking the backend domain.
+
+Fix:
+
+- try the app in an incognito window
+- disable the blocker for your Vercel and Render domains
+- redeploy the latest frontend, which now avoids the extra standalone dashboard health ping
+
+### Review history looks empty after deployment
+
+On free Render, SQLite lives on an ephemeral filesystem. History can disappear after redeploys, restarts, or spin-down.
+
+That is expected unless you switch to a persistent-disk or external database setup.
 
 ## Security Design
 

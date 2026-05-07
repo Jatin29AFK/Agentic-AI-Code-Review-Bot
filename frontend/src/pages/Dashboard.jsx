@@ -10,11 +10,16 @@ export default function Dashboard() {
   const [health, setHealth] = useState({ loading: true, ok: false, message: "" });
 
   useEffect(() => {
-    api.getReviews().then(setReviews).catch((err) => setError(err.message));
     api
-      .getHealth()
-      .then(() => setHealth({ loading: false, ok: true, message: "Backend connected" }))
-      .catch((err) => setHealth({ loading: false, ok: false, message: err.message }));
+      .getReviews()
+      .then((response) => {
+        setReviews(response);
+        setHealth({ loading: false, ok: true, message: "Backend connected" });
+      })
+      .catch((err) => {
+        setError(err.message);
+        setHealth({ loading: false, ok: false, message: err.message });
+      });
   }, []);
 
   const stats = useMemo(() => {

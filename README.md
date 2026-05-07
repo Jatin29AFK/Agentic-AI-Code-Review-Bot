@@ -35,49 +35,6 @@ https://agentic-ai-code-review-bot.vercel.app
 
 ---
 
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center">
-      <strong>Dashboard</strong><br />
-      <img src="docs/screenshots/Code-Review-Bot%20dashboard.png" alt="Dashboard screenshot" width="100%" />
-    </td>
-    <td align="center">
-      <strong>New Review</strong><br />
-      <img src="docs/screenshots/New_Review_Section.png" alt="New review screenshot" width="100%" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <strong>Review Result</strong><br />
-      <img src="docs/screenshots/Review_Result.png" alt="Review result screenshot" width="100%" />
-    </td>
-    <td align="center">
-      <strong>Detailed Result</strong><br />
-      <img src="docs/screenshots/Review_Result2.png" alt="Detailed review result screenshot" width="100%" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <strong>Bot Suggestions</strong><br />
-      <img src="docs/screenshots/Bot_Suggestions.png" alt="Bot suggestions screenshot" width="100%" />
-    </td>
-    <td align="center">
-      <strong>Comment Preview</strong><br />
-      <img src="docs/screenshots/Bot_Comment_preview.png" alt="Comment preview screenshot" width="100%" />
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
-      <strong>Autofix Drafts</strong><br />
-      <img src="docs/screenshots/Bot-Autofix_Drafts.png" alt="Autofix drafts screenshot" width="100%" />
-    </td>
-  </tr>
-</table>
-
----
-
 ## Overview
 
 **Agentic AI Code Review Bot** is an AI-powered pull request review system that performs an automated first-pass review on GitHub PRs.
@@ -609,6 +566,26 @@ This project follows a safe and controlled AI review design.
 - Invalid LLM output returns clear failures instead of fabricated results
 - Autofix output is draft-only and never auto-applied
 - GitHub comments are previewed before posting
+
+---
+
+## Screenshots
+
+| Dashboard | New Review |
+|---|---|
+| ![Dashboard screenshot](docs/screenshots/Code-Review-Bot%20dashboard.png) | ![New review screenshot](docs/screenshots/New_Review_Section.png) |
+
+| Review Result | Detailed Result |
+|---|---|
+| ![Review result screenshot](docs/screenshots/Review_Result.png) | ![Detailed review result screenshot](docs/screenshots/Review_Result2.png) |
+
+| Bot Suggestions | Comment Preview |
+|---|---|
+| ![Bot suggestions screenshot](docs/screenshots/Bot_Suggestions.png) | ![Comment preview screenshot](docs/screenshots/Bot_Comment_preview.png) |
+
+### Autofix Drafts
+
+![Autofix drafts screenshot](docs/screenshots/Bot-Autofix_Drafts.png)
 
 ---
 

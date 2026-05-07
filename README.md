@@ -29,7 +29,52 @@
 
 ---
 
-## Live Demo: https://agentic-ai-code-review-bot.vercel.app
+## Live Demo: 
+
+https://agentic-ai-code-review-bot.vercel.app
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Dashboard</strong><br />
+      <img src="docs/screenshots/Code-Review-Bot%20dashboard.png" alt="Dashboard screenshot" width="100%" />
+    </td>
+    <td align="center">
+      <strong>New Review</strong><br />
+      <img src="docs/screenshots/New_Review_Section.png" alt="New review screenshot" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Review Result</strong><br />
+      <img src="docs/screenshots/Review_Result.png" alt="Review result screenshot" width="100%" />
+    </td>
+    <td align="center">
+      <strong>Detailed Result</strong><br />
+      <img src="docs/screenshots/Review_Result2.png" alt="Detailed review result screenshot" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Bot Suggestions</strong><br />
+      <img src="docs/screenshots/Bot_Suggestions.png" alt="Bot suggestions screenshot" width="100%" />
+    </td>
+    <td align="center">
+      <strong>Comment Preview</strong><br />
+      <img src="docs/screenshots/Bot_Comment_preview.png" alt="Comment preview screenshot" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <strong>Autofix Drafts</strong><br />
+      <img src="docs/screenshots/Bot-Autofix_Drafts.png" alt="Autofix drafts screenshot" width="100%" />
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -138,6 +183,7 @@ Each finding includes:
 | Vite | Frontend build tool |
 | Tailwind CSS | Styling |
 | React Router | Client-side routing |
+| Vercel Analytics | Frontend traffic and usage insights |
 | Lucide React | Icons |
 
 ### Backend
@@ -541,6 +587,8 @@ docker compose up --build
 | LLM Provider | Groq / OpenRouter / OpenAI-compatible provider |
 | Source Control | GitHub |
 
+Vercel Web Analytics is enabled on the frontend to track deployed usage patterns and page activity.
+
 ---
 
 ## GitHub Webhook Setup
@@ -569,3 +617,5 @@ This project follows a safe and controlled AI review design.
 ### Built to make pull request reviews faster, safer, and more consistent.
 
 </div>
+
+---

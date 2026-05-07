@@ -1,525 +1,573 @@
-[![CI](https://img.shields.io/github/actions/workflow/status/Jatin29AFK/Agentic-AI-Code-Review-Bot/ci.yml?branch=main&label=CI)](https://github.com/Jatin29AFK/Agentic-AI-Code-Review-Bot/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-0f172a.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.12-2563eb.svg)](backend/requirements.txt)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-10b981.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18-38bdf8.svg)](frontend/package.json)
-[![Vite](https://img.shields.io/badge/Vite-5-8b5cf6.svg)](frontend/package.json)
+<div align="center">
 
 # Agentic AI Code Review Bot
 
-AI-powered GitHub pull request review system that fetches live PR diffs, runs a multi-agent review workflow, stores structured findings, and generates human-reviewable autofix patch drafts.
+### Multi-agent GitHub pull request reviewer with risk scoring, structured findings, comment previews, and human-reviewable autofix patch drafts.
 
-![Repository banner](docs/assets/repo-banner.svg)
+<br />
+
+![Repository Banner](docs/assets/repo-banner.svg)
+
+<br />
+
+[![CI](https://img.shields.io/github/actions/workflow/status/Jatin29AFK/Agentic-AI-Code-Review-Bot/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Jatin29AFK/Agentic-AI-Code-Review-Bot/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/Jatin29AFK/Agentic-AI-Code-Review-Bot?style=for-the-badge&color=0f172a)](LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/Jatin29AFK/Agentic-AI-Code-Review-Bot?style=for-the-badge&color=2563eb)](https://github.com/Jatin29AFK/Agentic-AI-Code-Review-Bot/commits/main)
+[![Repo Size](https://img.shields.io/github/repo-size/Jatin29AFK/Agentic-AI-Code-Review-Bot?style=for-the-badge&color=8b5cf6)](https://github.com/Jatin29AFK/Agentic-AI-Code-Review-Bot)
+
+[![Python](https://img.shields.io/badge/Python-3.12-2563eb?style=for-the-badge&logo=python&logoColor=white)](backend/requirements.txt)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-10b981?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18-38bdf8?style=for-the-badge&logo=react&logoColor=white)](frontend/package.json)
+[![Vite](https://img.shields.io/badge/Vite-5-646cff?style=for-the-badge&logo=vite&logoColor=white)](frontend/package.json)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38bdf8?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-003b57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ed?style=for-the-badge&logo=docker&logoColor=white)](docker-compose.yml)
+[![GitHub API](https://img.shields.io/badge/GitHub_API-181717?style=for-the-badge&logo=github&logoColor=white)](https://docs.github.com/en/rest)
+[![LLM Ready](https://img.shields.io/badge/LLM-Configurable-f97316?style=for-the-badge)](#environment-variables)
+
+</div>
+
+---
 
 ## Overview
 
-Software teams spend a lot of time manually reviewing pull requests for regressions, security concerns, code quality issues, and missing tests. This project automates that first pass while staying grounded in the actual GitHub diff.
+**Agentic AI Code Review Bot** is an AI-powered pull request review system that performs an automated first-pass review on GitHub PRs.
 
-## Features
+It fetches live PR diffs, runs them through a multi-agent review workflow, identifies bugs, security risks, code quality issues, and missing tests, then produces structured review findings with severity, confidence, risk score, and suggested fixes.
 
-- Manual PR review from repo URL + pull request number
-- Flexible GitHub access modes:
-  - public repo review without a token
-  - higher-rate public repo review with a PAT
-  - private repo review with a repo-scoped token
-  - optional GitHub comment posting with write permissions
-- GitHub webhook mode for `pull_request` events
-- Multi-agent review workflow:
-  - diff summary
-  - planning
-  - bug detection
-  - security review
-  - code quality review
-  - test suggestions
-  - final aggregation
-  - autofix patch drafting
-- Structured findings with severity, category, confidence, and suggested fix
-- Review score and risk calculation
-- Comment preview and GitHub PR comment posting
-- Optional path filters for targeted reviews
-- Lightweight release notes generated from each review
-- Skip-noise LGTM comment mode when a review is low risk with no actionable issues
-- SQLite review history
-- Recent review input recall for faster reruns
-- React dashboard for history, results, filters, sorting, and autofix drafts
-- Dockerized local development
+The system is designed to support engineering teams by reducing repetitive review effort while keeping the final decision human-controlled.
+
+---
+
+## Why This Project Matters
+
+Manual pull request reviews are time-consuming, especially when teams need to check for:
+
+- regression risks
+- security concerns
+- missing test coverage
+- poor maintainability
+- risky logic changes
+- repeated code review patterns
+
+This project automates the initial review layer and gives developers a structured, explainable, and human-reviewable summary before merging code.
+
+---
 
 ## Product Preview
 
-![Product preview](docs/assets/product-preview.svg)
+![Product Preview](docs/assets/product-preview.svg)
+
+---
+
+## Key Features
+
+### Pull Request Review
+
+- Review GitHub PRs using repository URL and pull request number
+- Autofill PR details from GitHub pull request links
+- Fetch live PR diffs directly from the GitHub REST API
+- Support public and private repository reviews
+- Review only selected files using path filters
+
+### Multi-Agent AI Review Workflow
+
+The review pipeline uses multiple specialized agents:
+
+- Diff Summary Agent
+- Planning Agent
+- Bug Detection Agent
+- Security Review Agent
+- Code Quality Agent
+- Test Suggestion Agent
+- Final Review Aggregator
+- Autofix Patch Drafting Agent
+
+### Structured Review Findings
+
+Each finding includes:
+
+- issue title
+- affected file and line
+- severity
+- category
+- confidence score
+- explanation
+- suggested fix
+- risk impact
+
+### Risk and Score Calculation
+
+- Overall review score
+- PR risk level
+- Issue severity distribution
+- Confidence-based prioritization
+- Low-risk review detection
+- Optional skip-noise LGTM mode
+
+### Autofix Patch Drafts
+
+- Generates human-reviewable unified diff patch drafts
+- Targets eligible high-confidence issues
+- Never auto-applies patches
+- Keeps developers in control
+- Produces structured patch metadata
+
+### GitHub Comment Support
+
+- Preview comments before posting
+- Post review comments back to GitHub when enabled
+- Supports fine-grained GitHub tokens
+- Optional webhook-based PR review automation
+
+### Review History Dashboard
+
+- SQLite-based review history
+- Recent review input recall
+- Search, filter, and sort previous reviews
+- View detailed findings and generated patches
+- Re-run reviews faster
+
+---
 
 ## Tech Stack
 
 ### Frontend
 
-- React + Vite
-- Tailwind CSS
-- React Router
-- Lucide icons
+| Technology | Purpose |
+|---|---|
+| React | UI development |
+| Vite | Frontend build tool |
+| Tailwind CSS | Styling |
+| React Router | Client-side routing |
+| Lucide React | Icons |
 
 ### Backend
 
-- FastAPI
-- SQLAlchemy
-- SQLite
-- Pydantic
-- `httpx`
-- Custom agent orchestrator
+| Technology | Purpose |
+|---|---|
+| FastAPI | REST API backend |
+| SQLAlchemy | Database ORM |
+| SQLite | Local review history |
+| Pydantic | Request and response validation |
+| httpx | GitHub API requests |
+| Python 3.12 | Backend runtime |
 
-### AI / Integrations
+### AI and Integrations
 
-- Configurable LLM provider via environment variables
-- GitHub REST API integration
+| Technology | Purpose |
+|---|---|
+| Configurable LLM Provider | AI review generation |
+| Groq / OpenAI / OpenRouter / OpenAI-compatible APIs | LLM provider options |
+| GitHub REST API | PR diff fetching and comment posting |
+| Custom Agent Orchestrator | Multi-agent review workflow |
 
-### Tooling
+### DevOps
 
-- Docker + Docker Compose
-- GitHub Actions CI
-- Render backend deployment config
-- Vercel frontend deployment config
+| Tool | Purpose |
+|---|---|
+| Docker | Containerized local setup |
+| Docker Compose | Full-stack local development |
+| GitHub Actions | CI workflow |
+| Render | Backend deployment |
+| Vercel | Frontend deployment |
+
+---
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     UI[React Dashboard] --> API[FastAPI Backend]
+
     GitHub[GitHub REST API] --> API
     API --> Orchestrator[Review Orchestrator]
+
     Orchestrator --> Summary[Diff Summary Agent]
     Orchestrator --> Planner[Planning Agent]
     Orchestrator --> Bug[Bug Detection Agent]
     Orchestrator --> Security[Security Review Agent]
     Orchestrator --> Quality[Code Quality Agent]
-    Orchestrator --> Test[Test Suggestion Agent]
+    Orchestrator --> Tests[Test Suggestion Agent]
     Orchestrator --> Aggregator[Final Review Aggregator]
     Orchestrator --> Autofix[Autofix Patch Agent]
+
     Orchestrator --> LLM[Configurable LLM Provider]
     API --> DB[(SQLite Review History)]
-    API --> Comments[GitHub Comment Posting]
+    API --> Comments[GitHub PR Comments]
 ```
 
-## Agent Workflow
+---
 
-1. `Diff Summary Agent` summarizes what changed and identifies impacted modules.
-2. `Planning Agent` decides which specialist checks are relevant for the diff.
-3. Specialist agents inspect the change for:
-   - bugs
-   - security issues
-   - quality and maintainability problems
-   - missing tests
-4. `Final Review Aggregator` merges findings, removes duplicate commentary, and produces the final summary.
-5. `Autofix Agent` drafts unified diff patches for eligible high-confidence findings.
+## Agent Review Workflow
+
+1. **Diff Summary Agent** summarizes the PR changes and identifies impacted modules.
+2. **Planning Agent** decides which specialist review agents are relevant.
+3. **Bug Detection Agent** checks for logical errors, edge cases, and regressions.
+4. **Security Review Agent** looks for risky patterns and possible vulnerabilities.
+5. **Code Quality Agent** reviews maintainability, duplication, and readability.
+6. **Test Suggestion Agent** identifies missing or weak test coverage.
+7. **Final Review Aggregator** merges findings and removes duplicate observations.
+8. **Autofix Agent** generates patch drafts for eligible high-confidence issues.
+
+---
 
 ## Autofix Patch Drafts
 
-Autofix is intentionally human-in-the-loop.
+Autofix is intentionally designed as a **human-in-the-loop** feature.
 
-- only runs after final issue aggregation
-- only targets supported textual files present in the reviewed diff
-- prioritizes high-confidence `bug`, `quality`, and selected `security` findings
-- returns structured metadata plus a `unified_diff` patch
-- never auto-applies changes
-- fails honestly if the model response is invalid or untrustworthy
+It does not directly modify the repository. Instead, it generates patch drafts that developers can review, adjust, and apply manually.
 
-Example draft shape:
+### Autofix Behavior
+
+- Runs only after final issue aggregation
+- Targets supported textual files from the reviewed diff
+- Prioritizes high-confidence bug, quality, and selected security findings
+- Returns unified diff patches
+- Avoids unsupported binary, generated, lock, or oversized files
+- Fails safely if model output is invalid or unreliable
+
+### Example Autofix Output
 
 ```json
 {
   "issue_id": "issue_8910ad4b150c",
   "file": "src/requests/models.py",
   "line": 391,
-  "fix_title": "Fix PreparedRequest.copy() sharing hooks reference with original",
-  "rationale": "The copy method shares the hooks reference with the original, which can lead to unintended side effects when modifying the copy.",
+  "fix_title": "Fix shared hooks reference in PreparedRequest.copy()",
+  "rationale": "The copy method shares the hooks reference with the original object, which can cause unintended side effects when modifying the copied request.",
   "patch_format": "unified_diff",
-  "patch_text": "--- src/requests/models.py\n+++ src/requests/models.py\n@@ -391,7 +391,7 @@\n -        p.hooks = self.hooks\n +        p.hooks = {event: list(callbacks) for event, callbacks in self.hooks.items()}",
+  "patch_text": "--- src/requests/models.py\n+++ src/requests/models.py\n@@ -391,7 +391,7 @@\n-        p.hooks = self.hooks\n+        p.hooks = {event: list(callbacks) for event, callbacks in self.hooks.items()}",
   "confidence": 0.99,
   "safety_level": "safe",
   "status": "generated"
 }
 ```
 
+---
+
 ## Project Structure
 
 ```text
-backend/
-  app/
-    agents/
-    routes/
-    services/
-    config.py
-    database.py
-    main.py
-    models.py
-    schemas.py
-  tests/
-  requirements.txt
-  Dockerfile
-  .env.example
-
-frontend/
-  public/
-  src/
-    api/
-    components/
-    pages/
-    styles/
-    App.jsx
-    main.jsx
-  package.json
-  Dockerfile
-  .env.example
-  vercel.json
-
-.github/workflows/ci.yml
-docker-compose.yml
-render.yaml
-README.md
+Agentic-AI-Code-Review-Bot/
+│
+├── backend/
+│   ├── app/
+│   │   ├── agents/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── main.py
+│   │   ├── models.py
+│   │   └── schemas.py
+│   │
+│   ├── tests/
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── styles/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   │
+│   ├── package.json
+│   ├── Dockerfile
+│   ├── .env.example
+│   └── vercel.json
+│
+├── docs/
+│   └── assets/
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── docker-compose.yml
+├── render.yaml
+├── README.md
+└── LICENSE
 ```
+
+---
 
 ## API Endpoints
 
-- `GET /health`
-- `POST /api/reviews/manual`
-- `GET /api/reviews`
-- `GET /api/reviews/{review_id}`
-- `GET /api/reviews/{review_id}/details`
-- `GET /api/reviews/{review_id}/comment-preview`
-- `GET /api/reviews/{review_id}/autofix`
-- `POST /api/reviews/{review_id}/autofix/regenerate`
-- `POST /api/reviews/{review_id}/post-comments`
-- `POST /api/webhooks/github`
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Backend health check |
+| POST | `/api/reviews/manual` | Start manual PR review |
+| GET | `/api/reviews` | Fetch review history |
+| GET | `/api/reviews/{review_id}` | Fetch review summary |
+| GET | `/api/reviews/{review_id}/details` | Fetch detailed findings |
+| GET | `/api/reviews/{review_id}/comment-preview` | Preview GitHub review comment |
+| GET | `/api/reviews/{review_id}/autofix` | Fetch autofix patch drafts |
+| POST | `/api/reviews/{review_id}/autofix/regenerate` | Regenerate autofix drafts |
+| POST | `/api/reviews/{review_id}/post-comments` | Post review comments to GitHub |
+| POST | `/api/webhooks/github` | GitHub webhook endpoint |
+
+---
 
 ## Environment Variables
 
-Copy `backend/.env.example` to `backend/.env`.
+### Backend
+
+Create a `.env` file inside the `backend` directory.
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Example configuration:
 
 ```env
 GITHUB_TOKEN=
 GITHUB_WEBHOOK_SECRET=
+
 LLM_PROVIDER=groq
 LLM_API_KEY=
 LLM_MODEL=llama-3.1-8b-instant
+
 DATABASE_URL=sqlite:///./reviews.db
+
 BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:5175,http://127.0.0.1:5175
+
 POST_WEBHOOK_COMMENTS=false
+
 AUTOFIX_ENABLED=true
 AUTOFIX_MAX_ISSUES_PER_REVIEW=3
 AUTOFIX_MIN_CONFIDENCE=0.85
 AUTOFIX_MAX_PATCH_CHARS=8000
 ```
 
-Copy `frontend/.env.example` to `frontend/.env` when running the UI locally.
-
-```env
-VITE_API_BASE_URL=http://127.0.0.1:8000
-```
-
-Supported provider modes in code:
+Supported LLM provider modes:
 
 - `openai`
 - `groq`
 - `openrouter`
 - `openai_compatible`
 
+### Frontend
+
+Create a `.env` file inside the `frontend` directory.
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+Example:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+---
+
 ## GitHub Access Modes
 
-### Public repo, review only
+### Public Repository Review Without Token
 
-- Paste the repo URL and PR number
-- Leave the GitHub token empty
-- Best for occasional reviews
-- GitHub unauthenticated REST API usage is rate limited, so heavy use may require a token
+Use this mode for occasional public repository reviews.
 
-### Public repo, reliable review
+- Paste the GitHub PR URL
+- Leave the token field empty
+- Start the review
 
-- Paste the repo URL and PR number
-- Add a fine-grained PAT in the GitHub token field when you want higher rate limits
-- Good for repeated testing or demo sessions
+GitHub unauthenticated API usage is rate-limited, so repeated reviews may require a token.
 
-### Private repo
+### Public Repository Review With Token
 
-- Paste the repo URL and PR number
-- Add a token that has access to that repository
+Use this mode for more reliable public repository reviews.
 
-### Post comments back to GitHub
+- Add a fine-grained GitHub personal access token
+- Use it for higher API limits
+- Useful for demos and repeated testing
 
-Use a token with write permissions.
+### Private Repository Review
 
-For a fine-grained PAT, grant:
+Use this mode when reviewing private repositories.
 
-- repository access to the target repo
+Required:
+
+- GitHub token with access to the target private repository
+- Repository URL
+- Pull request number
+
+### Posting Comments to GitHub
+
+To post comments back to a pull request, use a token with write permissions.
+
+For a fine-grained GitHub token, grant:
+
+- Repository access to the target repository
 - `Pull requests: Read and write`
 - `Issues: Read and write`
 - `Contents: Read-only`
 
+---
+
 ## Using the App
 
-### Fastest way to start
+1. Open the **New Review** page.
+2. Paste a GitHub PR URL, for example:
 
-1. Open `New Review`
-2. Paste a PR URL like `https://github.com/owner/repo/pull/123`
-3. Click `Autofill`
-4. Leave the token empty for a public-repo read-only review
-5. Add path filters only if you want to scope the review
-6. Start the review
+```text
+https://github.com/owner/repo/pull/123
+```
 
-### When to use a token
+3. Click **Autofill**.
+4. Leave the token empty for public read-only reviews.
+5. Add a token for private repos or comment posting.
+6. Add optional path filters if needed.
+7. Start the review.
+8. Review the generated findings, score, risk level, comment preview, and autofix drafts.
 
-- no token:
-  - occasional public-repo review
-- token recommended:
-  - repeated public-repo reviews
-  - higher GitHub API limits
-  - private repos
-  - posting comments back to GitHub
+---
 
-### Path filter examples
+## Path Filter Examples
 
-- review only backend code:
-  - `backend/**`
-- review only source files and skip docs:
-  - `src/**`
-  - `!docs/**`
-- skip markdown files:
-  - `!**/*.md`
+Review only backend code:
 
-### What happens after the review runs
+```text
+backend/**
+```
 
-- summary, score, and risk level are generated
-- release notes are created
-- issues can be filtered by category and search text
-- comment preview is generated before anything is posted to GitHub
-- autofix drafts are created only for eligible high-confidence findings
+Review only source files and skip documentation:
+
+```text
+src/**
+!docs/**
+```
+
+Skip markdown files:
+
+```text
+!**/*.md
+```
+
+---
 
 ## Run Locally
 
-### Backend
+### Prerequisites
+
+Make sure you have:
+
+- Python 3.12+
+- Node.js 18+
+- npm
+- Git
+- Docker, optional
+
+---
+
+### Backend Setup
 
 ```bash
 cd backend
+
 python -m venv .venv
 source .venv/bin/activate
+
 pip install -r requirements.txt
+
 cp .env.example .env
+
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend
+Backend will run at:
+
+```text
+http://127.0.0.1:8000
+```
+
+Health check:
+
+```text
+http://127.0.0.1:8000/health
+```
+
+---
+
+### Frontend Setup
 
 ```bash
 cd frontend
+
 npm install
 npm run dev
 ```
 
-### Tests
+Frontend will run at:
+
+```text
+http://localhost:5173
+```
+
+---
+
+### Run Tests
 
 ```bash
 cd backend
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-### Docker
+---
+
+### Run With Docker
 
 ```bash
 cp backend/.env.example backend/.env
 docker compose up --build
 ```
 
+---
+
 ## Deployment
 
-### Recommended Production Shape
+### Recommended Deployment Setup
 
-- frontend on Vercel
-- backend on Render
-- Groq as the LLM provider
-- `GITHUB_TOKEN` left empty by default unless you want a backend-wide token
-- user-supplied tokens in the UI for private repos and GitHub comment posting
+| Layer | Platform |
+|---|---|
+| Frontend | Vercel |
+| Backend | Render |
+| Database | SQLite for demo, persistent DB for production |
+| LLM Provider | Groq / OpenRouter / OpenAI-compatible provider |
+| Source Control | GitHub |
 
-### Backend on Render (Free Web Service)
-
-This is the simplest path if you want to deploy now without using Render Blueprint.
-
-1. Push the repo to GitHub.
-2. In Render, click `New` -> `Web Service`.
-3. Connect the repository.
-4. Set:
-   - `Root Directory`: `backend`
-   - `Runtime`: `Python 3`
-   - `Build Command`: `pip install -r requirements.txt`
-   - `Start Command`: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Add environment variables:
-   - `LLM_PROVIDER=groq`
-   - `LLM_API_KEY=<your Groq API key>`
-   - `LLM_MODEL=llama-3.1-8b-instant`
-   - `GITHUB_TOKEN=`
-   - `BACKEND_CORS_ORIGINS=https://<your-vercel-production-domain>`
-   - `BACKEND_CORS_ORIGIN_REGEX=https://.*\.vercel\.app`
-   - `DATABASE_URL=sqlite:///./reviews.db`
-   - `POST_WEBHOOK_COMMENTS=false`
-   - `AUTOFIX_ENABLED=true`
-   - `AUTOFIX_MAX_ISSUES_PER_REVIEW=3`
-   - `AUTOFIX_MIN_CONFIDENCE=0.85`
-   - `AUTOFIX_MAX_PATCH_CHARS=8000`
-6. Deploy the backend.
-7. Confirm `GET /health` succeeds on the Render URL.
-
-Important:
-
-- Free Render storage is ephemeral, so SQLite review history can disappear after restarts or redeploys.
-- For a shared production deployment, prefer user-supplied GitHub tokens in the UI rather than a broad backend token.
-- If you want a clean public demo before redeploying, remove the local `backend/reviews.db` file before pushing and redeploy the backend.
-
-### Optional Backend on Render (Blueprint / Persistent Disk)
-
-This repo includes a root-level [render.yaml](render.yaml) using Render Blueprints. It provisions:
-
-- a FastAPI web service
-- persistent disk storage for SQLite review history
-- environment variable placeholders for secrets and CORS
-- SQLite persistence at `/var/data/reviews.db`
-
-Use this path only if you want the persistent-disk setup and your Render plan supports Blueprints and disks.
-
-Deploy flow:
-
-1. Push the repo to GitHub.
-2. In Render, create a new Blueprint from this repository.
-3. Keep the generated service settings from `render.yaml`:
-   - `rootDir: backend`
-   - `buildCommand: pip install -r requirements.txt`
-   - `startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   - persistent disk mounted at `/var/data`
-   - `DATABASE_URL=sqlite:////var/data/reviews.db`
-4. Fill in environment values for:
-   - `LLM_API_KEY`
-   - `LLM_PROVIDER=groq`
-   - `LLM_MODEL=llama-3.1-8b-instant`
-   - `GITHUB_TOKEN` or leave blank if you want user-supplied tokens only
-   - `BACKEND_CORS_ORIGINS=https://<your-vercel-production-domain>`
-   - `AUTOFIX_ENABLED=true`
-   - `AUTOFIX_MAX_ISSUES_PER_REVIEW=3`
-   - `AUTOFIX_MIN_CONFIDENCE=0.85`
-   - `AUTOFIX_MAX_PATCH_CHARS=8000`
-5. Keep `POST_WEBHOOK_COMMENTS=false` for the first production release.
-6. Deploy the backend and confirm `GET /health` succeeds.
-7. Copy the public backend URL for the Vercel setup.
-
-Optional later:
-
-- `GITHUB_WEBHOOK_SECRET`
-- `BACKEND_CORS_ORIGIN_REGEX=https://.*\.vercel\.app`
-
-### Frontend on Vercel
-
-The frontend includes [frontend/vercel.json](frontend/vercel.json) with a rewrite for React Router SPA routes.
-
-Deploy flow:
-
-1. Import this GitHub repository into Vercel.
-2. Set the project `Root Directory` to `frontend`.
-3. Keep the existing Vite framework detection and [frontend/vercel.json](frontend/vercel.json) SPA rewrite.
-4. Add `VITE_API_BASE_URL=https://<your-render-backend-domain>`.
-5. Deploy or redeploy after the variable is saved.
-
-Notes:
-
-- The production frontend no longer falls back to a guessed backend host.
-- `VITE_API_BASE_URL` must be set in Vercel for deployed environments.
-- Local development still defaults to `http://<current-host>:8000` when the variable is not set.
-- If you use Vercel preview deployments, keep `BACKEND_CORS_ORIGIN_REGEX=https://.*\.vercel\.app` in Render.
-
-### Vercel Update Flow
-
-Whenever you change frontend code or the frontend env vars:
-
-1. Push the latest commit to GitHub.
-2. In Vercel, open the project.
-3. Verify `VITE_API_BASE_URL` still points to the correct Render backend.
-4. Trigger a redeploy.
-
-### Render Update Flow
-
-Whenever you change backend code or backend env vars:
-
-1. Push the latest commit to GitHub.
-2. In Render, redeploy the service.
-3. If you changed CORS values, verify `/health` and then test from the live Vercel URL.
+---
 
 ## GitHub Webhook Setup
 
-Webhook automation is intentionally out of scope for the first production deployment. Start with manual reviews from the UI, then enable webhook mode after the base deployment is stable.
+Webhook mode is optional. Start with manual review mode first, then enable webhook automation once the deployment is stable.
 
-1. Expose the backend publicly.
-2. In GitHub, open repository settings and create a webhook.
-3. Set the payload URL to:
-
-```text
-https://your-backend-domain/api/webhooks/github
-```
-
-4. Set content type to `application/json`.
-5. Add the same secret value to GitHub and `GITHUB_WEBHOOK_SECRET`.
-6. Subscribe to `Pull request` events.
-
-## Troubleshooting
-
-### `GitHub API request failed (403): Resource not accessible by personal access token`
-
-Your token can read the PR but cannot write comments.
-
-Fix:
-
-- for a fine-grained PAT:
-  - repository access to the target repo
-  - `Pull requests: Read and write`
-  - `Issues: Read and write`
-- for a classic PAT:
-  - `public_repo` for public repos
-  - `repo` for private repos
-
-### `Unexpected review failure: UNIQUE constraint failed: issues.id`
-
-This was caused by deterministic issue IDs across repeated reviews of the same finding. The app now generates issue IDs that are unique per review run.
-
-If you still see the error after pulling the latest code:
-
-1. restart the backend
-2. rerun the review
-
-### `ERR_BLOCKED_BY_CLIENT` in the browser
-
-This usually comes from a browser extension such as an ad blocker or privacy shield blocking the backend domain.
-
-Fix:
-
-- try the app in an incognito window
-- disable the blocker for your Vercel and Render domains
-- redeploy the latest frontend, which now avoids the extra standalone dashboard health ping
-
-### Review history looks empty after deployment
-
-On free Render, SQLite lives on an ephemeral filesystem. History can disappear after redeploys, restarts, or spin-down.
-
-That is expected unless you switch to a persistent-disk or external database setup.
+---
 
 ## Security Design
 
-- user GitHub tokens are accepted per request but never stored
-- likely secrets are redacted before diff content is sent to the model
-- large PRs are capped by file count and patch size
-- binary, generated, lock, and unsupported files are filtered out
-- webhook payloads verify `X-Hub-Signature-256`
-- invalid LLM output returns clear failures instead of fabricated reviews
-- autofix output is draft-only and never auto-applied
+This project follows a safe and controlled AI review design.
 
-## CI
+- User GitHub tokens are accepted per request but not stored
+- Likely secrets are redacted before sending diff content to the model
+- Large PRs are capped by file count and patch size
+- Binary, generated, lock, and unsupported files are filtered out
+- Webhook requests verify `X-Hub-Signature-256`
+- Invalid LLM output returns clear failures instead of fabricated results
+- Autofix output is draft-only and never auto-applied
+- GitHub comments are previewed before posting
 
-GitHub Actions runs:
+---
 
-- backend unit tests
-- frontend production build
+<div align="center">
 
-## License
+### Built to make pull request reviews faster, safer, and more consistent.
 
-This project is licensed under the [MIT License](LICENSE).
+</div>

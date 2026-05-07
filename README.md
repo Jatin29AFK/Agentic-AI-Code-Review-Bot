@@ -6,7 +6,7 @@
 
 <br />
 
-![Repository Banner](docs/assets/repo-banner.svg)
+<!-- ![Repository Banner](docs/assets/repo-banner.svg) -->
 
 <br />
 
@@ -51,12 +51,6 @@ Manual pull request reviews are time-consuming, especially when teams need to ch
 - repeated code review patterns
 
 This project automates the initial review layer and gives developers a structured, explainable, and human-reviewable summary before merging code.
-
----
-
-## Product Preview
-
-![Product Preview](docs/assets/product-preview.svg)
 
 ---
 
